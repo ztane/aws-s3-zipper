@@ -47,10 +47,24 @@ S3Zipper.prototype = {
                 });
             }
 
-            self.s3bucket = new AWS.S3({
+            self.sourceS3bucket = new AWS.S3({
+                endpoint: awsConfig.endpoint,
                 params: {
                     Bucket: self.awsConfig.bucket
-                }
+                },
+                accessKeyId: awsConfig.accessKeyId,
+                secretAccessKey: awsConfig.secretAccessKey,
+                region: awsConfig.region
+            });
+
+            self.targetS3Bucket = new AWS.S3({
+                endpoint: awsConfig.targetEndpoint,
+                params: {
+                    Bucket: self.awsConfig.targetBucket
+                },
+                accessKeyId: awsConfig.targetAccessKeyId,
+                secretAccessKey: awsConfig.targetSecretAccessKey,
+                region: awsConfig.region
             });
 
         })
@@ -113,7 +127,7 @@ S3Zipper.prototype = {
         files.Contents = [];
 
         var options = {
-            s3Client: this.s3bucket
+            s3Client: this.sourceS3bucket
             // more options available. See API docs below.
         };
         var client = s3.createClient(options);
@@ -197,7 +211,7 @@ S3Zipper.prototype = {
                 var files = clearedFiles.files;
                 console.log("files", files);
                 async.map(files, function (f, callback) {
-                    t.s3bucket.getObject({Bucket: t.awsConfig.bucket, Key: f.Key}, function (err, data) {
+                    t.sourceS3bucket.getObject({Bucket: t.awsConfig.bucket, Key: f.Key}, function (err, data) {
                         if (err)
                             callback(err);
                         else {
@@ -244,7 +258,7 @@ S3Zipper.prototype = {
         console.log('uploading ', s3ZipFileName, '...');
         var readStream = fs.createReadStream(localFileName);//tempFile
 
-        this.s3bucket.upload({
+        this.targetS3bucket.upload({
                 Bucket: this.awsConfig.bucket
                 , Key: s3ZipFileName
                 , ContentType: "application/zip"
@@ -277,7 +291,7 @@ S3Zipper.prototype = {
        }
        , callback: function
     */
-    , zipToS3File: function (params, callback) {
+   , zipToS3File: function (params, callback) {
 
         if(arguments.length == 4){
             // for backward compatibility
